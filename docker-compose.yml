@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - gateway
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./gateway:/app
+      - /app/node_modules
+    environment:
+      - AI_SERVICE_URL=http://ai-service:8000
+    depends_on:
+      - ai-service
+
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ai-service:/app
