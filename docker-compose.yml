@@ -11,7 +11,7 @@ services:
     depends_on:
       - gateway
     networks:
-      - medrag-network # ✅ ADD
+      - medrag-network
 
   gateway:
     build: ./gateway
@@ -25,7 +25,7 @@ services:
     depends_on:
       - ai-service
     networks:
-      - medrag-network # ✅ ADD
+      - medrag-network
 
   ai-service:
     build: ./ai-service
@@ -36,7 +36,7 @@ services:
     volumes:
       - ./ai-service:/app
     networks:
-      - medrag-network # ✅ ADD
+      - medrag-network
 
   db:
     image: postgres:15
