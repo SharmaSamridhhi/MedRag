@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   frontend:
     build: ./frontend
@@ -12,6 +10,8 @@ services:
       - VITE_API_URL=http://localhost:3000
     depends_on:
       - gateway
+    networks:
+      - medrag-network # ✅ ADD
 
   gateway:
     build: ./gateway
@@ -24,10 +24,37 @@ services:
       - AI_SERVICE_URL=http://ai-service:8000
     depends_on:
       - ai-service
+    networks:
+      - medrag-network # ✅ ADD
 
   ai-service:
     build: ./ai-service
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     volumes:
       - ./ai-service:/app
+    networks:
+      - medrag-network # ✅ ADD
+
+  db:
+    image: postgres:15
+    container_name: medrag-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-medrag_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medrag_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-medrag_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./ai-service/db/init:/docker-entrypoint-initdb.d
+    networks:
+      - medrag-network
+
+volumes:
+  pgdata:
+
+networks:
+  medrag-network:

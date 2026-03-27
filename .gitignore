@@ -11,7 +11,7 @@
 *.ntvs*
 *.njsproj
 *.sln
-
+*.env
 
 # Frontend (React / Node)
 
