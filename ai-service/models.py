@@ -17,6 +17,6 @@ class Document(Base):
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer)  # foreign key optional for now
+    user_id = Column(Integer)
     content = Column(Text)
-    embedding = Column(ARRAY(Float))  # pgvector can store as array of floats
+    embedding = Column(ARRAY(Float))
