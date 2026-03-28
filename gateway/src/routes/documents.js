@@ -1,0 +1,74 @@
+import express from "express";
+import { authMiddleware } from "../middleware/auth.js";
+import { upload } from "../middleware/upload.js";
+import { s3 } from "../config/s3.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
+
+const router = express.Router();
+
+router.post(
+  "/upload",
+  authMiddleware,
+  upload.array("files"),
+  async (req, res) => {
+    try {
+      const files = req.files;
+      const user = req.user;
+
+      if (!files || files.length === 0) {
+        return res.status(400).json({ error: "No files uploaded" });
+      }
+
+      const uploadResults = [];
+
+      for (const file of files) {
+        let fileKey;
+
+        if (process.env.AWS_BUCKET_NAME) {
+          fileKey = `${user.userId}/${uuidv4()}-${file.originalname}`;
+
+          const command = new PutObjectCommand({
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: fileKey,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+          });
+
+          await s3.send(command);
+          fileKey = `s3://${process.env.AWS_BUCKET_NAME}/${fileKey}`;
+        } else {
+          // Local disk — multer already saved the file, just record the path
+          fileKey = `uploads/${file.filename}`;
+        }
+
+        const response = await axios.post(
+          `${process.env.AI_SERVICE_URL}/documents`,
+          {
+            userId: user.userId,
+            filename: file.originalname,
+            status: "pending",
+          },
+        );
+
+        const documentId = response.data.documentId;
+
+        uploadResults.push({
+          documentId,
+          filename: file.originalname,
+        });
+      }
+
+      return res.status(200).json({
+        message: "Upload successful",
+        documents: uploadResults,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Upload failed" });
+    }
+  },
+);
+
+export default router;

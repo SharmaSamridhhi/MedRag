@@ -17,6 +17,8 @@ services:
     build: ./gateway
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     volumes:
       - ./gateway:/app
       - /app/node_modules
@@ -38,9 +40,12 @@ services:
       - ./ai-service:/app
     networks:
       - medrag-network
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: medrag-db
     ports:
       - "5432:5432"
@@ -50,9 +55,18 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-medrag_db}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./ai-service/db/init:/docker-entrypoint-initdb.d
+      - ./ai-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - medrag-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-medrag_user} -d ${POSTGRES_DB:-medrag_db}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:
