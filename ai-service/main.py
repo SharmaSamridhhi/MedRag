@@ -49,7 +49,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     
     new_user = User(
         email=user.email,
-        password=user.password,  # already hashed by gateway
+        password=user.password,
         name=user.name,
         role=user.role,
     )

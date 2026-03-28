@@ -24,4 +24,4 @@ class Document(Base):
     filename = Column(String)
     status = Column(String, default="pending")
     content = Column(Text)
-    embedding = Column(Vector(1536))  # standard for OpenAI embeddings
+    embedding = Column(Vector(1536))

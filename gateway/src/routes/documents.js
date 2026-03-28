@@ -39,7 +39,6 @@ router.post(
           await s3.send(command);
           fileKey = `s3://${process.env.AWS_BUCKET_NAME}/${fileKey}`;
         } else {
-          // Local disk — multer already saved the file, just record the path
           fileKey = `uploads/${file.filename}`;
         }
 
