@@ -3,11 +3,15 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import Document, User
 from pydantic import BaseModel
+import threading
 
 
 app = FastAPI()
+
+# ── Schemas ────────────────────────────────────────────────
 class DocumentCreate(BaseModel):
     userId: int
+    filePath: str
     filename: str
     status: str
 
@@ -17,9 +21,8 @@ class UserCreate(BaseModel):
     name: str
     role: str
 
-class UserLookup(BaseModel):
-    email: str
 
+# ── DB dependency ──────────────────────────────────────────
 def get_db():
     db = SessionLocal()
     try:
@@ -27,17 +30,22 @@ def get_db():
     finally:
         db.close()
         
+# ── Routes ─────────────────────────────────────────────────
 @app.post("/documents")
 def create_document(doc: DocumentCreate, db: Session = Depends(get_db)):
     new_doc = Document(
         user_id=doc.userId,
         filename=doc.filename,
+        file_path=doc.filePath,
         status=doc.status,
     )
-
     db.add(new_doc)
     db.commit()
     db.refresh(new_doc)
+    
+    from services.processor import process_document
+    thread = threading.Thread(target=process_document, args=(new_doc.id,))
+    thread.start()
 
     return {"documentId": new_doc.id}
 

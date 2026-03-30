@@ -1,8 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Float
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import Column, Integer, String, Text, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base 
 from pgvector.sqlalchemy import Vector
 
 Base = declarative_base()
@@ -22,6 +19,15 @@ class Document(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer)
     filename = Column(String)
+    file_path = Column(String)
     status = Column(String, default="pending")
-    content = Column(Text)
-    embedding = Column(Vector(1536))
+    
+class Chunk(Base):
+    __tablename__ = "chunks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False)
+    text = Column(Text, nullable=False)
+    page_number = Column(Integer)
+    chunk_index = Column(Integer)
+    embedding = Column(Vector(1536)) 

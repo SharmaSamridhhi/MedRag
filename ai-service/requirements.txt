@@ -6,3 +6,7 @@ psycopg2-binary
 alembic
 python-dotenv
 pgvector
+pymupdf
+langchain
+langchain-text-splitters
+boto3

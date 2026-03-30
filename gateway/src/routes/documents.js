@@ -47,6 +47,7 @@ router.post(
           {
             userId: user.userId,
             filename: file.originalname,
+            filePath: fileKey,
             status: "pending",
           },
         );
