@@ -96,6 +96,9 @@ def process_document(document_id: int):
         db.commit()
 
         print(f"[Processor] Document {document_id} processed. Total chunks: {chunk_index}")
+        
+        from services.embedder import generate_embeddings
+        generate_embeddings(document_id)
 
     except Exception as e:
         print(f"[Processor] Error processing document {document_id}: {e}")

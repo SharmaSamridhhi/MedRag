@@ -10,3 +10,4 @@ pymupdf
 langchain
 langchain-text-splitters
 boto3
+openai
