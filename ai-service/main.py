@@ -5,6 +5,10 @@ from models import Document, User
 from pydantic import BaseModel
 
 app = FastAPI()
+class RetrieveRequest(BaseModel):
+    query: str
+    userId: int
+    topK: int = 5
 class DocumentCreate(BaseModel):
     userId: int
     filePath: str
@@ -96,6 +100,15 @@ def get_user_by_email(email: str, db: Session = Depends(get_db)):
         "role": user.role,
         "password": user.password,
     }
+@app.post("/retrieve")
+def retrieve(req: RetrieveRequest):
+    from services.retriever import retrieve_chunks
+    results = retrieve_chunks(
+        query=req.query,
+        user_id=req.userId,
+        top_k=req.topK,
+    )
+    return {"results": results}
 
 @app.get("/test-db")
 def test_db(db: Session = Depends(get_db)):

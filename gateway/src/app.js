@@ -9,6 +9,7 @@ import { authorizeRoles } from "./middleware/role.js";
 import { authMiddleware } from "./middleware/auth.js";
 import cookieParser from "cookie-parser";
 import documentRoutes from "./routes/documents.js";
+import retrievalRoutes from "./routes/retrieval.js";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 app.use("/documents", documentRoutes);
+app.use("/retrieve", retrievalRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "gateway running" });
