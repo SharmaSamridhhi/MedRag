@@ -1,60 +1,78 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import Document, User
 from pydantic import BaseModel
-import threading
-
 
 app = FastAPI()
-
-# ── Schemas ────────────────────────────────────────────────
 class DocumentCreate(BaseModel):
     userId: int
     filePath: str
     filename: str
     status: str
-
 class UserCreate(BaseModel):
     email: str
     password: str
     name: str
     role: str
 
-
-# ── DB dependency ──────────────────────────────────────────
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-        
-# ── Routes ─────────────────────────────────────────────────
+
 @app.post("/documents")
-def create_document(doc: DocumentCreate, db: Session = Depends(get_db)):
+def create_document(
+    doc: DocumentCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     new_doc = Document(
         user_id=doc.userId,
         filename=doc.filename,
         file_path=doc.filePath,
-        status=doc.status,
+        status="pending",
     )
     db.add(new_doc)
     db.commit()
     db.refresh(new_doc)
-    
-    from services.processor import process_document
-    thread = threading.Thread(target=process_document, args=(new_doc.id,))
-    thread.start()
+
+    background_tasks.add_task(process_document_task, new_doc.id)
 
     return {"documentId": new_doc.id}
+
+@app.get("/documents/{document_id}/status")
+def get_document_status(document_id: int, db: Session = Depends(get_db)):
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return {
+        "documentId": doc.id,
+        "filename": doc.filename,
+        "status": doc.status,
+        "error": doc.error_message,
+    }
+
+@app.get("/documents/user/{user_id}")
+def get_user_documents(user_id: int, db: Session = Depends(get_db)):
+    docs = db.query(Document).filter(Document.user_id == user_id).all()
+    return [
+        {
+            "documentId": doc.id,
+            "filename": doc.filename,
+            "status": doc.status,
+            "error": doc.error_message,
+        }
+        for doc in docs
+    ]
 
 @app.post("/users")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == user.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="User already exists")
-    
     new_user = User(
         email=user.email,
         password=user.password,
@@ -82,3 +100,7 @@ def get_user_by_email(email: str, db: Session = Depends(get_db)):
 @app.get("/test-db")
 def test_db(db: Session = Depends(get_db)):
     return {"status": "DB connected successfully"}
+
+def process_document_task(document_id: int):
+    from services.processor import process_document
+    process_document(document_id)

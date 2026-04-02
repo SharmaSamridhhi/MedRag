@@ -63,6 +63,7 @@ def generate_embeddings(document_id: int):
             doc = db.query(Document).filter(Document.id == document_id).first()
             if doc:
                 doc.status = "failed"
+                doc.error_message = str(e)
                 db.commit()
         except:
             pass

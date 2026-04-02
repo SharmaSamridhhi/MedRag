@@ -71,4 +71,31 @@ router.post(
   },
 );
 
+router.get("/:id/status", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const response = await axios.get(
+      `${process.env.AI_SERVICE_URL}/documents/${id}/status`,
+    );
+    return res.status(200).json(response.data);
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+    return res.status(500).json({ error: "Failed to fetch document status" });
+  }
+});
+
+router.get("/", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const response = await axios.get(
+      `${process.env.AI_SERVICE_URL}/documents/user/${userId}`,
+    );
+    return res.status(200).json(response.data);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch documents" });
+  }
+});
+
 export default router;

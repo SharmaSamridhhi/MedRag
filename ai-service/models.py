@@ -21,6 +21,7 @@ class Document(Base):
     filename = Column(String)
     file_path = Column(String)
     status = Column(String, default="pending")
+    error_message = Column(Text, nullable=True)
     
 class Chunk(Base):
     __tablename__ = "chunks"
