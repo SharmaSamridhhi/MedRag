@@ -5,6 +5,10 @@ from models import Document, User
 from pydantic import BaseModel
 
 app = FastAPI()
+class ChatRequest(BaseModel):
+    query: str
+    userId: int
+    topK: int = 5
 class RetrieveRequest(BaseModel):
     query: str
     userId: int
@@ -109,6 +113,23 @@ def retrieve(req: RetrieveRequest):
         top_k=req.topK,
     )
     return {"results": results}
+
+@app.post("/chat")
+def chat(req: ChatRequest):
+    from services.retriever import retrieve_chunks
+    from services.llm import generate_answer
+
+    # Step 1: retrieve relevant chunks for this user
+    chunks = retrieve_chunks(
+        query=req.query,
+        user_id=req.userId,
+        top_k=req.topK,
+    )
+
+    # Step 2: generate a cited answer from those chunks
+    result = generate_answer(query=req.query, chunks=chunks)
+
+    return result
 
 @app.get("/test-db")
 def test_db(db: Session = Depends(get_db)):

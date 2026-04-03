@@ -31,13 +31,25 @@ app.get("/", (req, res) => {
   res.json({ message: "gateway running" });
 });
 
-app.post("/chat", async (req, res) => {
+app.post("/chat", authMiddleware, async (req, res) => {
   try {
-    const response = await axios.post(`${AI_SERVICE_URL}/chat`, req.body);
-    res.json(response.data);
+    const { query, topK } = req.body;
+    const userId = req.user.userId;
+
+    if (!query || typeof query !== "string" || query.trim() === "") {
+      return res.status(400).json({ error: "Query is required" });
+    }
+
+    const response = await axios.post(`${AI_SERVICE_URL}/chat`, {
+      query,
+      userId,
+      topK: topK || 5,
+    });
+
+    return res.json(response.data);
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({ error: "AI service error" });
+    console.error("[Gateway] Chat error:", error.message);
+    return res.status(500).json({ error: "Chat failed" });
   }
 });
 app.post("/auth/register", async (req, res) => {
