@@ -119,14 +119,11 @@ def chat(req: ChatRequest):
     from services.retriever import retrieve_chunks
     from services.llm import generate_answer
 
-    # Step 1: retrieve relevant chunks for this user
     chunks = retrieve_chunks(
         query=req.query,
         user_id=req.userId,
         top_k=req.topK,
     )
-
-    # Step 2: generate a cited answer from those chunks
     result = generate_answer(query=req.query, chunks=chunks)
 
     return result
