@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import Document, User
@@ -127,6 +128,26 @@ def chat(req: ChatRequest):
     result = generate_answer(query=req.query, chunks=chunks)
 
     return result
+
+@app.post("/chat/stream")
+def chat_stream(req: ChatRequest):
+    from services.retriever import retrieve_chunks
+    from services.llm import stream_answer
+
+    chunks = retrieve_chunks(
+        query=req.query,
+        user_id=req.userId,
+        top_k=req.topK,
+    )
+    
+    return StreamingResponse(
+        stream_answer(query=req.query, chunks=chunks),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 @app.get("/test-db")
 def test_db(db: Session = Depends(get_db)):

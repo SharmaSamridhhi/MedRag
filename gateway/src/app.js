@@ -52,6 +52,39 @@ app.post("/chat", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Chat failed" });
   }
 });
+app.post("/chat/stream", authMiddleware, async (req, res) => {
+  try {
+    const { query, topK } = req.body;
+    const userId = req.user.userId;
+
+    if (!query || typeof query !== "string" || query.trim() === "") {
+      return res.status(400).json({ error: "Query is required" });
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    const aiResponse = await axios.post(
+      `${AI_SERVICE_URL}/chat/stream`,
+      { query, userId, topK: topK || 5 },
+      { responseType: "stream" },
+    );
+
+    aiResponse.data.pipe(res);
+
+    req.on("close", () => {
+      aiResponse.data.destroy();
+    });
+  } catch (error) {
+    console.error("[Gateway] Stream chat error:", error.message);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Stream chat failed" });
+    }
+  }
+});
 app.post("/auth/register", async (req, res) => {
   try {
     const { email, password, name, role } = req.body;

@@ -1,13 +1,10 @@
 import os
 import re
+import json
 from openai import OpenAI
 
 
 def build_prompt(query: str, chunks: list) -> list:
-    """
-    Takes the user query and retrieved chunks.
-    Returns the messages array to send to GPT-4o.
-    """
     context_blocks = []
     for i, chunk in enumerate(chunks, start=1):
         block = (
@@ -39,11 +36,6 @@ def build_prompt(query: str, chunks: list) -> list:
 
 
 def parse_response(answer_text: str, chunks: list) -> dict:
-    """
-    Parses the raw LLM answer to extract:
-    - answer: the full answer text
-    - citations: a structured list of {sourceNumber, pageNumber, documentId}
-    """
     pattern = r"\[Source (\d+),\s*p\.(\d+)\]"
     matches = re.findall(pattern, answer_text)
 
@@ -74,13 +66,7 @@ def parse_response(answer_text: str, chunks: list) -> dict:
 
 
 def generate_answer(query: str, chunks: list) -> dict:
-    """
-    Main function:
-    1. If no chunks → return fallback message
-    2. Build prompt → call GPT-4o → parse response
-    3. Return {answer, citations, chunks_used}
-    """
-
+    """Non-streaming version — kept for reference/testing."""
     if not chunks:
         return {
             "answer": "I could not find relevant information in the uploaded documents.",
@@ -89,7 +75,6 @@ def generate_answer(query: str, chunks: list) -> dict:
         }
 
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
     messages = build_prompt(query, chunks)
 
     response = client.chat.completions.create(
@@ -100,7 +85,6 @@ def generate_answer(query: str, chunks: list) -> dict:
     )
 
     answer_text = response.choices[0].message.content
-
     parsed = parse_response(answer_text, chunks)
 
     return {
@@ -108,3 +92,48 @@ def generate_answer(query: str, chunks: list) -> dict:
         "citations": parsed["citations"],
         "chunks_used": len(chunks),
     }
+
+
+def stream_answer(query: str, chunks: list):
+    """
+    Generator function that yields SSE-formatted strings.
+    
+    SSE format is:
+        data: <json string>\n\n
+    
+    We send two types of events:
+      1. token events  → {"type": "token", "content": "some text"}
+      2. citations event → {"type": "citations", "citations": [...], "chunks_used": N}
+    
+    The frontend listens for these and renders accordingly.
+    """
+    if not chunks:
+        fallback = "I could not find relevant information in the uploaded documents."
+        yield f"data: {json.dumps({'type': 'token', 'content': fallback})}\n\n"
+        yield f"data: {json.dumps({'type': 'citations', 'citations': [], 'chunks_used': 0})}\n\n"
+        return
+
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    messages = build_prompt(query, chunks)
+
+    stream = client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        temperature=0.2,
+        max_tokens=1024,
+        stream=True,
+    )
+
+    full_answer = ""
+
+    for chunk in stream:
+        delta = chunk.choices[0].delta
+        token = delta.content
+
+        if token is not None:
+            full_answer += token
+            yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+
+    parsed = parse_response(full_answer, chunks)
+
+    yield f"data: {json.dumps({'type': 'citations', 'citations': parsed['citations'], 'chunks_used': len(chunks)})}\n\n"
