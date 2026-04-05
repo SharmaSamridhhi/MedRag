@@ -10,6 +10,7 @@ class ChatRequest(BaseModel):
     query: str
     userId: int
     topK: int = 5
+    sessionId: str = "default"
 class RetrieveRequest(BaseModel):
     query: str
     userId: int
@@ -119,13 +120,17 @@ def retrieve(req: RetrieveRequest):
 def chat(req: ChatRequest):
     from services.retriever import retrieve_chunks
     from services.llm import generate_answer
+    from services.memory import get_history, add_turn
+    
+    history = get_history(req.sessionId)
 
     chunks = retrieve_chunks(
         query=req.query,
         user_id=req.userId,
         top_k=req.topK,
     )
-    result = generate_answer(query=req.query, chunks=chunks)
+    result = generate_answer(query=req.query, chunks=chunks, history=history)
+    add_turn(req.sessionId, req.query, result["answer"])
 
     return result
 
@@ -133,15 +138,32 @@ def chat(req: ChatRequest):
 def chat_stream(req: ChatRequest):
     from services.retriever import retrieve_chunks
     from services.llm import stream_answer
+    from services.memory import get_history, add_turn
+
+    history = get_history(req.sessionId)
 
     chunks = retrieve_chunks(
         query=req.query,
         user_id=req.userId,
         top_k=req.topK,
     )
-    
+    def generate_and_remember():
+        full_answer = ""
+        for event_str in stream_answer(query=req.query, chunks=chunks, history=history):
+            if '"type": "token"' in event_str:
+                import json as _json
+                try:
+                    data = _json.loads(event_str.replace("data: ", "").strip())
+                    if data.get("type") == "token":
+                        full_answer += data.get("content", "")
+                except Exception:
+                    pass
+            yield event_str
+
+        add_turn(req.sessionId, req.query, full_answer)
+
     return StreamingResponse(
-        stream_answer(query=req.query, chunks=chunks),
+        generate_and_remember(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -149,6 +171,18 @@ def chat_stream(req: ChatRequest):
         }
     )
 
+@app.get("/chat/history")
+def get_chat_history(sessionId: str = "default"):
+    from services.memory import get_all_messages
+    messages = get_all_messages(sessionId)
+    return {"sessionId": sessionId, "messages": messages}
+
+@app.post("/chat/clear")
+def clear_chat_history(sessionId: str = "default"):
+    from services.memory import clear_history
+    clear_history(sessionId)
+    return {"message": "History cleared", "sessionId": sessionId}
+    
 @app.get("/test-db")
 def test_db(db: Session = Depends(get_db)):
     return {"status": "DB connected successfully"}

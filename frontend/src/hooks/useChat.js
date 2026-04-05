@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -6,6 +7,7 @@ export function useChat() {
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef(null);
+  const sessionIdRef = useRef(uuidv4());
 
   const sendMessage = async (query) => {
     if (!query.trim() || isStreaming) return;
@@ -32,13 +34,18 @@ export function useChat() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ query, topK: 5 }),
+        body: JSON.stringify({
+          query,
+          topK: 5,
+          sessionId: sessionIdRef.current,
+        }),
         signal: controller.signal,
       });
 
       if (!response.ok) {
         throw new Error("Stream request failed");
       }
+
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -48,9 +55,7 @@ export function useChat() {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-
         const lines = buffer.split("\n\n");
-
         buffer = lines.pop();
 
         for (const line of lines) {
@@ -84,7 +89,7 @@ export function useChat() {
               });
             }
           } catch {
-            // Malformed JSON in SSE — skip
+            // Malformed JSON — skip
           }
         }
       }
@@ -110,5 +115,20 @@ export function useChat() {
     setIsStreaming(false);
   };
 
-  return { messages, isStreaming, sendMessage, stopStreaming };
+  const clearSession = async () => {
+    setMessages([]);
+    sessionIdRef.current = uuidv4();
+    try {
+      await fetch(`${API_URL}/chat/clear`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ sessionId: sessionIdRef.current }),
+      });
+    } catch (e) {
+      console.error("Failed to clear session:", e);
+    }
+  };
+
+  return { messages, isStreaming, sendMessage, stopStreaming, clearSession };
 }

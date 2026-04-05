@@ -33,7 +33,7 @@ app.get("/", (req, res) => {
 
 app.post("/chat", authMiddleware, async (req, res) => {
   try {
-    const { query, topK } = req.body;
+    const { query, topK, sessionId } = req.body;
     const userId = req.user.userId;
 
     if (!query || typeof query !== "string" || query.trim() === "") {
@@ -44,6 +44,7 @@ app.post("/chat", authMiddleware, async (req, res) => {
       query,
       userId,
       topK: topK || 5,
+      sessionId: sessionId || `user-${userId}`,
     });
 
     return res.json(response.data);
@@ -54,7 +55,7 @@ app.post("/chat", authMiddleware, async (req, res) => {
 });
 app.post("/chat/stream", authMiddleware, async (req, res) => {
   try {
-    const { query, topK } = req.body;
+    const { query, topK, sessionId } = req.body;
     const userId = req.user.userId;
 
     if (!query || typeof query !== "string" || query.trim() === "") {
@@ -69,7 +70,12 @@ app.post("/chat/stream", authMiddleware, async (req, res) => {
 
     const aiResponse = await axios.post(
       `${AI_SERVICE_URL}/chat/stream`,
-      { query, userId, topK: topK || 5 },
+      {
+        query,
+        userId,
+        topK: topK || 5,
+        sessionId: sessionId || `user-${userId}`,
+      },
       { responseType: "stream" },
     );
 
@@ -172,6 +178,31 @@ app.get(
     });
   },
 );
+app.get("/chat/history", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const sessionId = req.query.sessionId || `user-${userId}`;
+    const response = await axios.get(
+      `${AI_SERVICE_URL}/chat/history?sessionId=${encodeURIComponent(sessionId)}`,
+    );
+    return res.json(response.data);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
+
+app.post("/chat/clear", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const sessionId = req.body.sessionId || `user-${userId}`;
+    const response = await axios.post(
+      `${AI_SERVICE_URL}/chat/clear?sessionId=${encodeURIComponent(sessionId)}`,
+    );
+    return res.json(response.data);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to clear history" });
+  }
+});
 
 const PORT = process.env.GATEWAY_PORT || 3000;
 

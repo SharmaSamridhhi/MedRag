@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useChat } from "../hooks/useChat";
 
 export default function ChatWindow() {
-  const { messages, isStreaming, sendMessage, stopStreaming } = useChat();
+  const { messages, isStreaming, sendMessage, stopStreaming, clearSession } =
+    useChat();
   const [input, setInput] = useState("");
   const bottomRef = useRef(null);
 
@@ -19,7 +20,30 @@ export default function ChatWindow() {
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: 24 }}>
-      <h2>MedRag Chat</h2>
+      {/* Header row — title + New Chat button side by side */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+        }}
+      >
+        <h2 style={{ margin: 0 }}>MedRag Chat</h2>
+        <button
+          onClick={clearSession}
+          style={{
+            padding: "6px 14px",
+            background: "#f5f5f5",
+            border: "1px solid #ddd",
+            borderRadius: 8,
+            cursor: "pointer",
+            fontSize: 13,
+          }}
+        >
+          New Chat
+        </button>
+      </div>
 
       {/* Message list */}
       <div
@@ -59,16 +83,13 @@ export default function ChatWindow() {
                 textAlign: "left",
               }}
             >
-              {/* Message content — renders progressively as tokens arrive */}
               <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
                 {msg.content}
-                {/* Blinking cursor while streaming */}
                 {msg.loading && (
                   <span style={{ animation: "blink 1s infinite" }}>▌</span>
                 )}
               </p>
 
-              {/* Citations shown after stream completes */}
               {!msg.loading && msg.citations?.length > 0 && (
                 <div
                   style={{
@@ -140,8 +161,8 @@ export default function ChatWindow() {
       </form>
 
       <style>{`
-        @keyframes blink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
-      `}</style>
+      @keyframes blink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
+    `}</style>
     </div>
   );
 }

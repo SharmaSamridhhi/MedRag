@@ -4,7 +4,7 @@ import json
 from openai import OpenAI
 
 
-def build_prompt(query: str, chunks: list) -> list:
+def build_prompt(query: str, chunks: list, history: list = None) -> list:
     context_blocks = []
     for i, chunk in enumerate(chunks, start=1):
         block = (
@@ -24,16 +24,17 @@ def build_prompt(query: str, chunks: list) -> list:
         "Do not hallucinate or use outside knowledge."
     )
 
+    messages = [{"role": "system", "content": system_prompt}]
+    if history:
+        messages.extend(history)
+
     user_message = (
         f"Context:\n{context_text}\n\n"
         f"Question: {query}"
     )
+    messages.append({"role": "user", "content": user_message})
 
-    return [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_message},
-    ]
-
+    return messages
 
 def parse_response(answer_text: str, chunks: list) -> dict:
     pattern = r"\[Source (\d+),\s*p\.(\d+)\]"
@@ -65,7 +66,7 @@ def parse_response(answer_text: str, chunks: list) -> dict:
     }
 
 
-def generate_answer(query: str, chunks: list) -> dict:
+def generate_answer(query: str, chunks: list, history: list = None) -> dict:
     """Non-streaming version — kept for reference/testing."""
     if not chunks:
         return {
@@ -75,7 +76,7 @@ def generate_answer(query: str, chunks: list) -> dict:
         }
 
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    messages = build_prompt(query, chunks)
+    messages = build_prompt(query, chunks, history=history)
 
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -94,19 +95,7 @@ def generate_answer(query: str, chunks: list) -> dict:
     }
 
 
-def stream_answer(query: str, chunks: list):
-    """
-    Generator function that yields SSE-formatted strings.
-    
-    SSE format is:
-        data: <json string>\n\n
-    
-    We send two types of events:
-      1. token events  → {"type": "token", "content": "some text"}
-      2. citations event → {"type": "citations", "citations": [...], "chunks_used": N}
-    
-    The frontend listens for these and renders accordingly.
-    """
+def stream_answer(query: str, chunks: list, history: list = None):
     if not chunks:
         fallback = "I could not find relevant information in the uploaded documents."
         yield f"data: {json.dumps({'type': 'token', 'content': fallback})}\n\n"
@@ -114,7 +103,7 @@ def stream_answer(query: str, chunks: list):
         return
 
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    messages = build_prompt(query, chunks)
+    messages = build_prompt(query, chunks, history=history)
 
     stream = client.chat.completions.create(
         model="gpt-4o",
