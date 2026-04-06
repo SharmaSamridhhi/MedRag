@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "../hooks/useChat";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function ChatWindow() {
   const { messages, isStreaming, sendMessage, stopStreaming, clearSession } =
@@ -19,46 +23,21 @@ export default function ChatWindow() {
   };
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: 24 }}>
-      {/* Header row — title + New Chat button side by side */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 16,
-        }}
-      >
-        <h2 style={{ margin: 0 }}>MedRag Chat</h2>
-        <button
-          onClick={clearSession}
-          style={{
-            padding: "6px 14px",
-            background: "#f5f5f5",
-            border: "1px solid #ddd",
-            borderRadius: 8,
-            cursor: "pointer",
-            fontSize: 13,
-          }}
-        >
+    <div className='max-w-2xl mx-auto p-6 flex flex-col h-screen'>
+      {/* Header */}
+      <div className='flex justify-between items-center mb-4'>
+        <h2 className='text-2xl font-semibold' style={{ color: "#6b9080" }}>
+          MedRag Chat
+        </h2>
+        <Button variant='outline' size='sm' onClick={clearSession}>
           New Chat
-        </button>
+        </Button>
       </div>
 
       {/* Message list */}
-      <div
-        style={{
-          border: "1px solid #ddd",
-          borderRadius: 8,
-          padding: 16,
-          height: 480,
-          overflowY: "auto",
-          marginBottom: 16,
-          background: "#fafafa",
-        }}
-      >
+      <Card className='flex-1 overflow-y-auto p-4 mb-4 bg-white'>
         {messages.length === 0 && (
-          <p style={{ color: "#999" }}>
+          <p className='text-sm text-gray-400'>
             Ask a question about your uploaded documents.
           </p>
         )}
@@ -66,45 +45,36 @@ export default function ChatWindow() {
         {messages.map((msg, i) => (
           <div
             key={i}
-            style={{
-              marginBottom: 16,
-              textAlign: msg.role === "user" ? "right" : "left",
-            }}
+            className={`mb-4 flex ${
+              msg.role === "user" ? "justify-end" : "justify-start"
+            }`}
           >
             <div
-              style={{
-                display: "inline-block",
-                maxWidth: "80%",
-                padding: "10px 14px",
-                borderRadius: 12,
-                background: msg.role === "user" ? "#0070f3" : "#fff",
-                color: msg.role === "user" ? "#fff" : "#111",
-                border: msg.role === "assistant" ? "1px solid #eee" : "none",
-                textAlign: "left",
-              }}
+              className='max-w-[80%] px-4 py-3 rounded-xl text-sm leading-relaxed'
+              style={
+                msg.role === "user"
+                  ? { backgroundColor: "#6b9080", color: "#fff" }
+                  : {
+                      backgroundColor: "#f6fff8",
+                      border: "1px solid #cce3de",
+                      color: "#1a1a1a",
+                    }
+              }
             >
-              <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+              <p className='whitespace-pre-wrap m-0'>
                 {msg.content}
-                {msg.loading && (
-                  <span style={{ animation: "blink 1s infinite" }}>▌</span>
-                )}
+                {msg.loading && <span className='animate-pulse ml-0.5'>▌</span>}
               </p>
 
               {!msg.loading && msg.citations?.length > 0 && (
-                <div
-                  style={{
-                    marginTop: 10,
-                    paddingTop: 8,
-                    borderTop: "1px solid #eee",
-                    fontSize: 12,
-                    color: "#555",
-                  }}
-                >
-                  <strong>Sources:</strong>
+                <div className='mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500'>
+                  <p className='font-semibold mb-1'>Sources:</p>
                   {msg.citations.map((c, j) => (
-                    <div key={j}>
-                      Source {c.sourceNumber} — Document #{c.documentId}, p.
-                      {c.pageNumber}
+                    <div key={j} className='mb-0.5'>
+                      <Badge variant='secondary' className='text-xs mr-1'>
+                        Source {c.sourceNumber}
+                      </Badge>
+                      Document #{c.documentId}, p.{c.pageNumber}
                     </div>
                   ))}
                 </div>
@@ -113,56 +83,30 @@ export default function ChatWindow() {
           </div>
         ))}
         <div ref={bottomRef} />
-      </div>
+      </Card>
 
       {/* Input form */}
-      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8 }}>
-        <input
+      <form onSubmit={handleSubmit} className='flex gap-2'>
+        <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder='Ask about your documents...'
           disabled={isStreaming}
-          style={{
-            flex: 1,
-            padding: "10px 14px",
-            borderRadius: 8,
-            border: "1px solid #ddd",
-            fontSize: 14,
-          }}
+          className='flex-1'
         />
         {isStreaming ? (
-          <button
-            type='button'
-            onClick={stopStreaming}
-            style={{
-              padding: "10px 20px",
-              background: "#e00",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-            }}
-          >
+          <Button type='button' onClick={stopStreaming} variant='destructive'>
             Stop
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
             type='submit'
-            style={{
-              padding: "10px 20px",
-              background: "#0070f3",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-            }}
+            style={{ backgroundColor: "#6b9080", color: "#fff" }}
           >
             Send
-          </button>
+          </Button>
         )}
       </form>
-
-      <style>{`
-      @keyframes blink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
-    `}</style>
     </div>
   );
 }
