@@ -16,6 +16,7 @@ dotenv.config();
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL;
 const app = express();
 
+app.use(express.json());
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
@@ -159,6 +160,13 @@ app.post("/auth/login", async (req, res) => {
     console.log(error);
     res.status(500).json({ error: "Login failed" });
   }
+});
+
+app.get("/auth/me", authMiddleware, (req, res) => {
+  res.json({
+    userId: req.user.userId,
+    role: req.user.role,
+  });
 });
 
 app.get("/protected", authMiddleware, (req, res) => {

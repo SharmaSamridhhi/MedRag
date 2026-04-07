@@ -10,4 +10,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    host: true, // ← add this so Vite binds to 0.0.0.0 inside Docker
+    proxy: {
+      "/api": {
+        target: "http://gateway:3000", // ← change localhost → gateway
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
+  },
 });
