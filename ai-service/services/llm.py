@@ -36,6 +36,7 @@ def build_prompt(query: str, chunks: list, history: list = None) -> list:
 
     return messages
 
+
 def parse_response(answer_text: str, chunks: list) -> dict:
     pattern = r"\[Source (\d+),\s*p\.(\d+)\]"
     matches = re.findall(pattern, answer_text)
@@ -58,6 +59,7 @@ def parse_response(answer_text: str, chunks: list) -> dict:
                 "sourceNumber": source_num,
                 "pageNumber": page_num,
                 "documentId": chunks[chunk_index]["documentId"],
+                "chunkText": chunks[chunk_index]["text"],
             })
 
     return {
@@ -67,7 +69,6 @@ def parse_response(answer_text: str, chunks: list) -> dict:
 
 
 def generate_answer(query: str, chunks: list, history: list = None) -> dict:
-    """Non-streaming version — kept for reference/testing."""
     if not chunks:
         return {
             "answer": "I could not find relevant information in the uploaded documents.",

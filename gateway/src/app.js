@@ -106,14 +106,32 @@ app.post("/auth/register", async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    await axios.post(`${AI_SERVICE_URL}/users`, {
+    const userResponse = await axios.post(`${AI_SERVICE_URL}/users`, {
       email,
       name,
       role,
       password: hashedPassword,
     });
 
-    res.json({ message: "User registered successfully" });
+    const newUser = userResponse.data;
+
+    // Issue a token so the frontend can auto-login after registration
+    const token = generateToken({
+      userId: newUser.userId,
+      role: newUser.role,
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+
+    res.json({
+      message: "User registered successfully",
+      userId: newUser.userId,
+      role: newUser.role,
+    });
   } catch (error) {
     if (error.response?.status === 400) {
       return res.status(400).json({ error: "User already exists" });
@@ -148,7 +166,7 @@ app.post("/auth/login", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
     });
 
@@ -167,6 +185,15 @@ app.get("/auth/me", authMiddleware, (req, res) => {
     userId: req.user.userId,
     role: req.user.role,
   });
+});
+
+app.post("/auth/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  res.json({ message: "Logged out successfully" });
 });
 
 app.get("/protected", authMiddleware, (req, res) => {

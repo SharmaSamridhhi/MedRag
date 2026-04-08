@@ -16,7 +16,19 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (userData) => setUser(userData);
-  const logout = () => setUser(null);
+
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (e) {
+      console.error("Logout request failed:", e);
+    } finally {
+      setUser(null);
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ user, login, logout, loading }}>

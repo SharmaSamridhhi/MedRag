@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base 
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
+from sqlalchemy.ext.declarative import declarative_base
 from pgvector.sqlalchemy import Vector
+from datetime import datetime, timezone
 
 Base = declarative_base()
 
@@ -22,7 +23,8 @@ class Document(Base):
     file_path = Column(String)
     status = Column(String, default="pending")
     error_message = Column(Text, nullable=True)
-    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=True)
+
 class Chunk(Base):
     __tablename__ = "chunks"
 
@@ -31,4 +33,4 @@ class Chunk(Base):
     text = Column(Text, nullable=False)
     page_number = Column(Integer)
     chunk_index = Column(Integer)
-    embedding = Column(Vector(1536)) 
+    embedding = Column(Vector(1536))

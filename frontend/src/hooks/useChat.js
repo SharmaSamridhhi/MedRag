@@ -116,18 +116,20 @@ export function useChat() {
   };
 
   const clearSession = async () => {
-    setMessages([]);
-    sessionIdRef.current = uuidv4();
+    // Clear old session on the server BEFORE rotating the ID
+    const oldSessionId = sessionIdRef.current;
     try {
       await fetch(`${API_URL}/chat/clear`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ sessionId: sessionIdRef.current }),
+        body: JSON.stringify({ sessionId: oldSessionId }),
       });
     } catch (e) {
       console.error("Failed to clear session:", e);
     }
+    setMessages([]);
+    sessionIdRef.current = uuidv4();
   };
 
   return { messages, isStreaming, sendMessage, stopStreaming, clearSession };

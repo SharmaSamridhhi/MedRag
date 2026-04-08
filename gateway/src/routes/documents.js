@@ -98,4 +98,27 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
+router.delete("/:id", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    await axios.delete(
+      `${process.env.AI_SERVICE_URL}/documents/${id}?userId=${userId}`,
+    );
+
+    return res.status(200).json({ message: "Document deleted" });
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+    if (error.response?.status === 403) {
+      return res
+        .status(403)
+        .json({ error: "Not authorised to delete this document" });
+    }
+    return res.status(500).json({ error: "Failed to delete document" });
+  }
+});
+
 export default router;

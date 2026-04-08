@@ -2,24 +2,28 @@ from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import Document, User
+from models import Document, User, Chunk
 from pydantic import BaseModel
 
 app = FastAPI()
+
 class ChatRequest(BaseModel):
     query: str
     userId: int
     topK: int = 5
     sessionId: str = "default"
+
 class RetrieveRequest(BaseModel):
     query: str
     userId: int
     topK: int = 5
+
 class DocumentCreate(BaseModel):
     userId: int
     filePath: str
     filename: str
     status: str
+
 class UserCreate(BaseModel):
     email: str
     password: str
@@ -74,9 +78,22 @@ def get_user_documents(user_id: int, db: Session = Depends(get_db)):
             "filename": doc.filename,
             "status": doc.status,
             "error": doc.error_message,
+            "createdAt": doc.created_at.isoformat() if doc.created_at else None,
         }
         for doc in docs
     ]
+
+@app.delete("/documents/{document_id}")
+def delete_document(document_id: int, userId: int, db: Session = Depends(get_db)):
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if doc.user_id != userId:
+        raise HTTPException(status_code=403, detail="Not authorised")
+    db.query(Chunk).filter(Chunk.document_id == document_id).delete()
+    db.delete(doc)
+    db.commit()
+    return {"message": "Document deleted"}
 
 @app.post("/users")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -106,6 +123,7 @@ def get_user_by_email(email: str, db: Session = Depends(get_db)):
         "role": user.role,
         "password": user.password,
     }
+
 @app.post("/retrieve")
 def retrieve(req: RetrieveRequest):
     from services.retriever import retrieve_chunks
@@ -121,7 +139,7 @@ def chat(req: ChatRequest):
     from services.retriever import retrieve_chunks
     from services.llm import generate_answer
     from services.memory import get_history, add_turn
-    
+
     history = get_history(req.sessionId)
 
     chunks = retrieve_chunks(
@@ -147,6 +165,7 @@ def chat_stream(req: ChatRequest):
         user_id=req.userId,
         top_k=req.topK,
     )
+
     def generate_and_remember():
         full_answer = ""
         for event_str in stream_answer(query=req.query, chunks=chunks, history=history):
@@ -182,7 +201,7 @@ def clear_chat_history(sessionId: str = "default"):
     from services.memory import clear_history
     clear_history(sessionId)
     return {"message": "History cleared", "sessionId": sessionId}
-    
+
 @app.get("/test-db")
 def test_db(db: Session = Depends(get_db)):
     return {"status": "DB connected successfully"}
