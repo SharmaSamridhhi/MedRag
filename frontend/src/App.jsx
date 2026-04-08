@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
-import ChatWindow from "@/components/ChatWindow"; // your existing component
+import LibraryPage from "@/pages/LibraryPage";
+import ChatWindow from "@/components/ChatWindow";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -23,7 +24,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* Default redirect */}
+      <Route
+        path='/library'
+        element={
+          <ProtectedRoute>
+            <LibraryPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path='*' element={<Navigate to='/login' replace />} />
     </Routes>
   );
@@ -33,7 +41,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <AppRoutes></AppRoutes>
+        <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
   );

@@ -8,18 +8,16 @@ import { useAuth } from "@/context/AuthContext";
 import { Mail, Lock, LogIn, Shield, Brain } from "lucide-react";
 
 export default function LoginPage() {
-  const { login, user } = useAuth();
+  const { login, user, loading } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (user) {
-      window.location.href = "/dashboard";
+      navigate("/dashboard");
     }
-  }, [user]);
-  console.log(user);
+  }, [user, navigate]);
 
   const {
     register,
@@ -28,7 +26,7 @@ export default function LoginPage() {
   } = useForm();
 
   const onSubmit = async (data) => {
-    setLoading(true);
+    setSubmitting(true);
     setServerError("");
     try {
       const res = await fetch("/api/auth/login", {
@@ -49,12 +47,12 @@ export default function LoginPage() {
     } catch {
       setServerError("Network error. Please check your connection.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   {
-    if (!isReady) {
+    if (loading) {
       return (
         <div className='flex h-screen items-center justify-center'>
           <Card className='w-full max-w-md p-8 text-center'>
@@ -67,7 +65,6 @@ export default function LoginPage() {
         </div>
       );
     }
-
     return (
       <div
         className='min-h-screen flex flex-col items-center justify-center px-4'
@@ -207,9 +204,9 @@ export default function LoginPage() {
               type='submit'
               className='w-full h-12 text-base font-medium flex items-center justify-center gap-2'
               style={{ backgroundColor: "#6b9080", color: "white" }}
-              disabled={loading}
+              disabled={submitting}
             >
-              {loading ? (
+              {submitting ? (
                 "Signing in…"
               ) : (
                 <>
