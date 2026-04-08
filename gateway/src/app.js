@@ -225,6 +225,17 @@ app.get("/chat/history", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch history" });
   }
 });
+app.get("/chat/sessions", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const response = await axios.get(
+      `${AI_SERVICE_URL}/chat/sessions/${userId}`,
+    );
+    return res.json(response.data);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch sessions" });
+  }
+});
 
 app.post("/chat/clear", authMiddleware, async (req, res) => {
   try {

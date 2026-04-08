@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import LibraryPage from "@/pages/LibraryPage";
+import HistoryPage from "@/pages/HistoryPage";
 import ChatWindow from "@/components/ChatWindow";
 
 function ProtectedRoute({ children }) {
@@ -29,6 +30,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <LibraryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/history'
+        element={
+          <ProtectedRoute>
+            <HistoryPage />
           </ProtectedRoute>
         }
       />

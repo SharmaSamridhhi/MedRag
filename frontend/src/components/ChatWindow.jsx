@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "../hooks/useChat";
 import { useAuth } from "@/context/AuthContext";
+import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/pages/DashboardLayout";
 import { Send, Square, X, FileText, ChevronRight } from "lucide-react";
 
@@ -28,7 +29,6 @@ const EXAMPLE_QUESTIONS = {
 };
 
 function highlightCitationText(text, sourceNumber) {
-  // Highlight any [Source N, p.X] references within the chunk text itself
   const parts = text.split(/(\[Source \d+,\s*p\.\d+\])/g);
   return parts.map((part, i) =>
     /^\[Source/.test(part) ? (
@@ -174,8 +174,15 @@ function CitationPanel({ citations, activeIndex, onTabChange, onClose }) {
 }
 
 export default function ChatWindow() {
-  const { messages, isStreaming, sendMessage, stopStreaming, clearSession } =
-    useChat();
+  const [searchParams] = useSearchParams();
+  const {
+    messages,
+    isStreaming,
+    sendMessage,
+    stopStreaming,
+    clearSession,
+    loadSession,
+  } = useChat(searchParams.get("sessionId"));
   const { user } = useAuth();
   const [input, setInput] = useState("");
   const [activeCitations, setActiveCitations] = useState([]);

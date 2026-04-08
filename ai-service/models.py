@@ -14,6 +14,7 @@ class User(Base):
     password = Column(String, nullable=False)
     role = Column(String, nullable=False)
 
+
 class Document(Base):
     __tablename__ = "documents"
 
@@ -23,7 +24,12 @@ class Document(Base):
     file_path = Column(String)
     status = Column(String, default="pending")
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=True,
+    )
+
 
 class Chunk(Base):
     __tablename__ = "chunks"
@@ -34,3 +40,38 @@ class Chunk(Base):
     page_number = Column(Integer)
     chunk_index = Column(Integer)
     embedding = Column(Vector(1536))
+
+
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+
+    id = Column(String, primary_key=True)
+    user_id = Column(Integer, nullable=False)
+    title = Column(String, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(
+        String, ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False
+    )
+    role = Column(String, nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )

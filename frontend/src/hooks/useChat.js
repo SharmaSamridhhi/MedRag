@@ -1,13 +1,33 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-export function useChat() {
+export function useChat(initialSessionId = null) {
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef(null);
-  const sessionIdRef = useRef(uuidv4());
+  const sessionIdRef = useRef(initialSessionId || uuidv4());
+
+  // If a sessionId is passed in (from history), load its messages
+  useEffect(() => {
+    if (!initialSessionId) return;
+    sessionIdRef.current = initialSessionId;
+    fetch(`${API_URL}/chat/history?sessionId=${initialSessionId}`, {
+      credentials: "include",
+    })
+      .then((r) => (r.ok ? r.json() : { messages: [] }))
+      .then((data) => {
+        const loaded = (data.messages || []).map((m) => ({
+          role: m.role,
+          content: m.content,
+          citations: [],
+          loading: false,
+        }));
+        setMessages(loaded);
+      })
+      .catch(() => {});
+  }, [initialSessionId]);
 
   const sendMessage = async (query, selectedDocumentIds = []) => {
     if (!query.trim() || isStreaming) return;
@@ -23,7 +43,6 @@ export function useChat() {
       loading: true,
     };
     setMessages((prev) => [...prev, assistantMessage]);
-
     setIsStreaming(true);
 
     try {
@@ -43,9 +62,7 @@ export function useChat() {
         signal: controller.signal,
       });
 
-      if (!response.ok) {
-        throw new Error("Stream request failed");
-      }
+      if (!response.ok) throw new Error("Stream request failed");
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -61,11 +78,9 @@ export function useChat() {
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
-
           const jsonStr = line.slice(6);
           try {
             const event = JSON.parse(jsonStr);
-
             if (event.type === "token") {
               setMessages((prev) => {
                 const updated = [...prev];

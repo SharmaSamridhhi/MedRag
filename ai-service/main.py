@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import Document, User, Chunk
+from models import Document, User, Chunk, ChatSession, ChatMessage
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -13,6 +13,7 @@ class ChatRequest(BaseModel):
     topK: int = 5
     sessionId: str = "default"
     documentIds: list[int] = []
+    userId: int = 0
 
 class RetrieveRequest(BaseModel):
     query: str
@@ -150,7 +151,7 @@ def chat(req: ChatRequest):
     document_ids=req.documentIds if req.documentIds else None,
 )
     result = generate_answer(query=req.query, chunks=chunks, history=history)
-    add_turn(req.sessionId, req.query, result["answer"])
+    add_turn(req.sessionId, req.query, result["answer"], user_id=req.userId)
 
     return result
 
@@ -182,7 +183,7 @@ def chat_stream(req: ChatRequest):
                     pass
             yield event_str
 
-        add_turn(req.sessionId, req.query, full_answer)
+        add_turn(req.sessionId, req.query, full_answer, user_id=req.userId)
 
     return StreamingResponse(
         generate_and_remember(),
@@ -198,6 +199,12 @@ def get_chat_history(sessionId: str = "default"):
     from services.memory import get_all_messages
     messages = get_all_messages(sessionId)
     return {"sessionId": sessionId, "messages": messages}
+
+@app.get("/chat/sessions/{user_id}")
+def get_user_sessions(user_id: int):
+    from services.memory import get_user_sessions
+    sessions = get_user_sessions(user_id)
+    return {"sessions": sessions}
 
 @app.post("/chat/clear")
 def clear_chat_history(sessionId: str = "default"):
