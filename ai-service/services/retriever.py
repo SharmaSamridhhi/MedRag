@@ -4,10 +4,10 @@ from openai import OpenAI
 from sqlalchemy import text
 from database import SessionLocal
 
-def retrieve_chunks(query: str, user_id: int, top_k: int = 5):
+def retrieve_chunks(query: str, user_id: int, top_k: int = 5, document_ids: list = None):
     """
-    Takes a user query and user_id, returns the top_k most similar
-    chunks from documents owned by that user.
+    Returns the top_k most similar chunks from documents owned by user_id.
+    If document_ids is provided, restricts search to only those documents.
     """
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     embed_response = client.embeddings.create(
@@ -21,8 +21,22 @@ def retrieve_chunks(query: str, user_id: int, top_k: int = 5):
     start_time = time.time()
 
     try:
+        # Build optional document filter
+        doc_filter = ""
+        params = {
+            "embedding": embedding_str,
+            "user_id": user_id,
+            "top_k": top_k,
+        }
+
+        if document_ids and len(document_ids) > 0:
+            placeholders = ",".join(f":doc_id_{i}" for i in range(len(document_ids)))
+            doc_filter = f"AND c.document_id IN ({placeholders})"
+            for i, doc_id in enumerate(document_ids):
+                params[f"doc_id_{i}"] = doc_id
+
         result = db.execute(
-            text("""
+            text(f"""
                 SELECT
                     c.id,
                     c.text,
@@ -33,20 +47,17 @@ def retrieve_chunks(query: str, user_id: int, top_k: int = 5):
                 JOIN documents d ON c.document_id = d.id
                 WHERE d.user_id = :user_id
                   AND d.status = 'ready'
+                  {doc_filter}
                 ORDER BY c.embedding <=> CAST(:embedding AS vector)
                 LIMIT :top_k
             """),
-            {
-                "embedding": embedding_str,
-                "user_id": user_id,
-                "top_k": top_k,
-            }
+            params
         )
 
         rows = result.fetchall()
 
         elapsed_ms = (time.time() - start_time) * 1000
-        print(f"[Retriever] Similarity search completed in {elapsed_ms:.1f}ms — {len(rows)} chunks returned")
+        print(f"[Retriever] Search completed in {elapsed_ms:.1f}ms — {len(rows)} chunks returned")
 
         return [
             {

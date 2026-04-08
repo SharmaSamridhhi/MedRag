@@ -9,7 +9,7 @@ export function useChat() {
   const abortRef = useRef(null);
   const sessionIdRef = useRef(uuidv4());
 
-  const sendMessage = async (query) => {
+  const sendMessage = async (query, selectedDocumentIds = []) => {
     if (!query.trim() || isStreaming) return;
 
     const userMessage = { role: "user", content: query };
@@ -38,6 +38,7 @@ export function useChat() {
           query,
           topK: 5,
           sessionId: sessionIdRef.current,
+          documentIds: selectedDocumentIds,
         }),
         signal: controller.signal,
       });
@@ -116,7 +117,6 @@ export function useChat() {
   };
 
   const clearSession = async () => {
-    // Clear old session on the server BEFORE rotating the ID
     const oldSessionId = sessionIdRef.current;
     try {
       await fetch(`${API_URL}/chat/clear`, {

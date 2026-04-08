@@ -118,6 +118,9 @@ export default function ChatWindow() {
   const { user } = useAuth();
   const [input, setInput] = useState("");
   const [activeCitation, setActiveCitation] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [selectedDocIds, setSelectedDocIds] = useState([]);
+  const [showDocPicker, setShowDocPicker] = useState(false);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -126,10 +129,23 @@ export default function ChatWindow() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL}/documents`, {
+      credentials: "include",
+    })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        const ready = Array.isArray(data)
+          ? data.filter((d) => d.status === "ready")
+          : [];
+        setDocuments(ready);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = () => {
     if (!input.trim() || isStreaming) return;
-    sendMessage(input.trim());
+    sendMessage(input.trim(), selectedDocIds);
     setInput("");
     textareaRef.current?.focus();
   };
@@ -331,6 +347,7 @@ export default function ChatWindow() {
           </div>
 
           {/* Disclaimer */}
+          {/* Disclaimer */}
           <div className='px-6 pb-1 shrink-0'>
             <p className='text-center text-[11px]' style={{ color: "#a4c3b2" }}>
               MedRAG is an AI assistant for clinicians. Always verify findings
@@ -338,8 +355,123 @@ export default function ChatWindow() {
             </p>
           </div>
 
-          {/* Input area */}
-          <div className='px-6 pb-5 pt-2 shrink-0'>
+          {/* Doc selector + Input */}
+          <div className='px-6 pb-5 pt-2 shrink-0 space-y-2'>
+            {/* Document selector */}
+            {documents.length > 0 && (
+              <div className='relative'>
+                <button
+                  onClick={() => setShowDocPicker((v) => !v)}
+                  className='flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors'
+                  style={{
+                    borderColor: "#cce3de",
+                    backgroundColor:
+                      selectedDocIds.length > 0 ? "#eaf4f4" : "white",
+                    color: "#4a6b5b",
+                  }}
+                >
+                  <FileText
+                    className='w-3.5 h-3.5'
+                    style={{ color: "#6b9080" }}
+                  />
+                  {selectedDocIds.length === 0
+                    ? "All documents"
+                    : `${selectedDocIds.length} document${selectedDocIds.length > 1 ? "s" : ""} selected`}
+                  <ChevronRight
+                    className='w-3 h-3 transition-transform'
+                    style={{
+                      color: "#6b9080",
+                      transform: showDocPicker
+                        ? "rotate(90deg)"
+                        : "rotate(0deg)",
+                    }}
+                  />
+                </button>
+
+                {showDocPicker && (
+                  <div
+                    className='absolute bottom-full mb-2 left-0 w-72 rounded-xl shadow-lg border overflow-hidden z-10'
+                    style={{ backgroundColor: "white", borderColor: "#cce3de" }}
+                  >
+                    <div
+                      className='px-3 py-2 border-b flex items-center justify-between'
+                      style={{ borderColor: "#eaf4f4" }}
+                    >
+                      <p
+                        className='text-xs font-semibold'
+                        style={{ color: "#1a2e25" }}
+                      >
+                        Filter by document
+                      </p>
+                      {selectedDocIds.length > 0 && (
+                        <button
+                          onClick={() => setSelectedDocIds([])}
+                          className='text-xs'
+                          style={{ color: "#6b9080" }}
+                        >
+                          Clear all
+                        </button>
+                      )}
+                    </div>
+                    <div className='max-h-48 overflow-y-auto py-1'>
+                      {documents.map((doc) => {
+                        const isSelected = selectedDocIds.includes(
+                          doc.documentId,
+                        );
+                        return (
+                          <button
+                            key={doc.documentId}
+                            onClick={() =>
+                              setSelectedDocIds((prev) =>
+                                isSelected
+                                  ? prev.filter((id) => id !== doc.documentId)
+                                  : [...prev, doc.documentId],
+                              )
+                            }
+                            className='flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-gray-50 transition-colors'
+                          >
+                            <div
+                              className='w-4 h-4 rounded border flex items-center justify-center shrink-0'
+                              style={{
+                                borderColor: isSelected ? "#6b9080" : "#cce3de",
+                                backgroundColor: isSelected
+                                  ? "#6b9080"
+                                  : "white",
+                              }}
+                            >
+                              {isSelected && (
+                                <svg
+                                  width='10'
+                                  height='8'
+                                  viewBox='0 0 10 8'
+                                  fill='none'
+                                >
+                                  <path
+                                    d='M1 4l3 3 5-6'
+                                    stroke='white'
+                                    strokeWidth='1.5'
+                                    strokeLinecap='round'
+                                    strokeLinejoin='round'
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                            <span
+                              className='text-xs truncate'
+                              style={{ color: "#1a2e25" }}
+                            >
+                              {doc.filename}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Text input */}
             <div
               className='flex items-end gap-3 rounded-2xl px-4 py-3'
               style={{ backgroundColor: "white", border: "1px solid #cce3de" }}

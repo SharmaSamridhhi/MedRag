@@ -12,6 +12,7 @@ class ChatRequest(BaseModel):
     userId: int
     topK: int = 5
     sessionId: str = "default"
+    documentIds: list[int] = []
 
 class RetrieveRequest(BaseModel):
     query: str
@@ -143,10 +144,11 @@ def chat(req: ChatRequest):
     history = get_history(req.sessionId)
 
     chunks = retrieve_chunks(
-        query=req.query,
-        user_id=req.userId,
-        top_k=req.topK,
-    )
+    query=req.query,
+    user_id=req.userId,
+    top_k=req.topK,
+    document_ids=req.documentIds if req.documentIds else None,
+)
     result = generate_answer(query=req.query, chunks=chunks, history=history)
     add_turn(req.sessionId, req.query, result["answer"])
 
@@ -161,10 +163,11 @@ def chat_stream(req: ChatRequest):
     history = get_history(req.sessionId)
 
     chunks = retrieve_chunks(
-        query=req.query,
-        user_id=req.userId,
-        top_k=req.topK,
-    )
+    query=req.query,
+    user_id=req.userId,
+    top_k=req.topK,
+    document_ids=req.documentIds if req.documentIds else None,
+)
 
     def generate_and_remember():
         full_answer = ""
