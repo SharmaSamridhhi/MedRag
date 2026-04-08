@@ -27,8 +27,41 @@ const EXAMPLE_QUESTIONS = {
   ],
 };
 
-function CitationPanel({ citation, onClose }) {
+function highlightCitationText(text, sourceNumber) {
+  // Highlight any [Source N, p.X] references within the chunk text itself
+  const parts = text.split(/(\[Source \d+,\s*p\.\d+\])/g);
+  return parts.map((part, i) =>
+    /^\[Source/.test(part) ? (
+      <mark
+        key={i}
+        style={{
+          backgroundColor: "#eaf4f4",
+          color: "#2d4a3e",
+          borderRadius: "3px",
+          padding: "0 2px",
+        }}
+      >
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
+}
+
+function CitationPanel({ citations, activeIndex, onTabChange, onClose }) {
+  const citation = citations[activeIndex];
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
   if (!citation) return null;
+
   return (
     <div
       className='w-80 shrink-0 h-full flex flex-col border-l overflow-hidden'
@@ -62,8 +95,35 @@ function CitationPanel({ citation, onClose }) {
         </button>
       </div>
 
+      {/* Tabs — only shown when multiple citations */}
+      {citations.length > 1 && (
+        <div
+          className='flex border-b overflow-x-auto shrink-0'
+          style={{ borderColor: "#cce3de", backgroundColor: "#eaf4f4" }}
+        >
+          {citations.map((c, i) => (
+            <button
+              key={i}
+              onClick={() => onTabChange(i)}
+              className='px-4 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-colors shrink-0'
+              style={{
+                borderBottomColor:
+                  activeIndex === i ? "#6b9080" : "transparent",
+                color: activeIndex === i ? "#1a2e25" : "#6b9080",
+                backgroundColor: activeIndex === i ? "white" : "transparent",
+              }}
+            >
+              Source {c.sourceNumber}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Document info */}
-      <div className='px-4 py-3 border-b' style={{ borderColor: "#eaf4f4" }}>
+      <div
+        className='px-4 py-3 border-b shrink-0'
+        style={{ borderColor: "#eaf4f4" }}
+      >
         <div
           className='flex items-start gap-3 p-3 rounded-xl'
           style={{ backgroundColor: "#eaf4f4", border: "1px solid #cce3de" }}
@@ -79,10 +139,10 @@ function CitationPanel({ citation, onClose }) {
               className='text-xs font-semibold truncate'
               style={{ color: "#1a2e25" }}
             >
-              Document #{citation.documentId}
+              {citation.filename || `Document #${citation.documentId}`}
             </p>
             <p className='text-[11px] mt-0.5' style={{ color: "#6b9080" }}>
-              Page {citation.pageNumber} · Source {citation.sourceNumber}
+              Page {citation.pageNumber} · Paragraph {citation.sourceNumber}
             </p>
           </div>
         </div>
@@ -100,12 +160,13 @@ function CitationPanel({ citation, onClose }) {
           className='rounded-xl p-4 text-sm leading-relaxed'
           style={{
             backgroundColor: "white",
-            border: "1px solid #cce3de",
+            border: "1px solid #6b9080",
             color: "#2d4a3e",
-            fontStyle: "normal",
           }}
         >
-          {citation.chunkText || "Chunk text not available."}
+          {citation.chunkText
+            ? highlightCitationText(citation.chunkText, citation.sourceNumber)
+            : "Chunk text not available."}
         </div>
       </div>
     </div>
@@ -117,7 +178,8 @@ export default function ChatWindow() {
     useChat();
   const { user } = useAuth();
   const [input, setInput] = useState("");
-  const [activeCitation, setActiveCitation] = useState(null);
+  const [activeCitations, setActiveCitations] = useState([]);
+  const [activeCitationIndex, setActiveCitationIndex] = useState(0);
   const [documents, setDocuments] = useState([]);
   const [selectedDocIds, setSelectedDocIds] = useState([]);
   const [showDocPicker, setShowDocPicker] = useState(false);
@@ -157,17 +219,23 @@ export default function ChatWindow() {
     }
   };
 
-  const handleCitationClick = (citation) => {
-    setActiveCitation((prev) =>
-      prev?.sourceNumber === citation.sourceNumber &&
-      prev?.documentId === citation.documentId
-        ? null
-        : citation,
-    );
+  const handleCitationClick = (allCitations, clickedIndex) => {
+    setActiveCitations((prev) => {
+      const isSameSet =
+        prev.length === allCitations.length &&
+        prev.every((c, i) => c.sourceNumber === allCitations[i].sourceNumber);
+      if (isSameSet && activeCitationIndex === clickedIndex) {
+        // Toggle off if clicking the same active citation
+        return [];
+      }
+      return allCitations;
+    });
+    setActiveCitationIndex(clickedIndex);
   };
 
   const handleNewChat = async () => {
-    setActiveCitation(null);
+    setActiveCitations([]);
+    setActiveCitationIndex(0);
     await clearSession();
   };
 
@@ -313,30 +381,32 @@ export default function ChatWindow() {
                     {/* Citations */}
                     {!msg.loading && msg.citations?.length > 0 && (
                       <div className='flex flex-wrap gap-1.5 mt-2 ml-1'>
-                        {msg.citations.map((c, j) => (
-                          <button
-                            key={j}
-                            onClick={() => handleCitationClick(c)}
-                            className='inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors'
-                            style={{
-                              backgroundColor:
-                                activeCitation?.sourceNumber ===
-                                  c.sourceNumber &&
-                                activeCitation?.documentId === c.documentId
+                        {msg.citations.map((c, j) => {
+                          const isActive =
+                            activeCitations.length > 0 &&
+                            activeCitations[activeCitationIndex]
+                              ?.sourceNumber === c.sourceNumber &&
+                            activeCitations[activeCitationIndex]?.documentId ===
+                              c.documentId;
+                          return (
+                            <button
+                              key={j}
+                              onClick={() =>
+                                handleCitationClick(msg.citations, j)
+                              }
+                              className='inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors'
+                              style={{
+                                backgroundColor: isActive
                                   ? "#6b9080"
                                   : "#eaf4f4",
-                              color:
-                                activeCitation?.sourceNumber ===
-                                  c.sourceNumber &&
-                                activeCitation?.documentId === c.documentId
-                                  ? "white"
-                                  : "#2d4a3e",
-                              border: "1px solid #cce3de",
-                            }}
-                          >
-                            Source {c.sourceNumber} · p.{c.pageNumber}
-                          </button>
-                        ))}
+                                color: isActive ? "white" : "#2d4a3e",
+                                border: "1px solid #cce3de",
+                              }}
+                            >
+                              Source {c.sourceNumber} · p.{c.pageNumber}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -346,7 +416,6 @@ export default function ChatWindow() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Disclaimer */}
           {/* Disclaimer */}
           <div className='px-6 pb-1 shrink-0'>
             <p className='text-center text-[11px]' style={{ color: "#a4c3b2" }}>
@@ -519,10 +588,15 @@ export default function ChatWindow() {
         </div>
 
         {/* Citation panel */}
-        {activeCitation && (
+        {activeCitations.length > 0 && (
           <CitationPanel
-            citation={activeCitation}
-            onClose={() => setActiveCitation(null)}
+            citations={activeCitations}
+            activeIndex={activeCitationIndex}
+            onTabChange={setActiveCitationIndex}
+            onClose={() => {
+              setActiveCitations([]);
+              setActiveCitationIndex(0);
+            }}
           />
         )}
       </div>
