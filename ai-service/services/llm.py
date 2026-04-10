@@ -38,8 +38,16 @@ def build_prompt(query: str, chunks: list, history: list = None) -> list:
 
 
 def parse_response(answer_text: str, chunks: list) -> dict:
-    pattern = r"\[Source (\d+),\s*p\.(\d+)\]"
-    matches = re.findall(pattern, answer_text)
+
+    bracket_groups = re.findall(r"\[([^\]]+)\]", answer_text)
+    raw_pairs = []
+    for group in bracket_groups:
+        parts = [p.strip() for p in group.split(";")]
+        for part in parts:
+            m = re.match(r"Source\s+(\d+),\s*p\.(\d+)", part.strip())
+            if m:
+                raw_pairs.append((m.group(1), m.group(2)))
+    matches = raw_pairs
 
     seen = set()
     citations = []

@@ -42,7 +42,12 @@ export default function LoginPage() {
         setServerError(json.message || "Login failed. Please try again.");
         return;
       }
-      login({ email: data.email, role: json.role, id: json.userId });
+      login({
+        email: data.email,
+        role: json.role,
+        name: json.name,
+        id: json.userId,
+      });
       navigate("/dashboard");
     } catch {
       setServerError("Network error. Please check your connection.");

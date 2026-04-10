@@ -119,6 +119,7 @@ app.post("/auth/register", async (req, res) => {
     const token = generateToken({
       userId: newUser.userId,
       role: newUser.role,
+      name: newUser.name,
     });
 
     res.cookie("token", token, {
@@ -131,6 +132,7 @@ app.post("/auth/register", async (req, res) => {
       message: "User registered successfully",
       userId: newUser.userId,
       role: newUser.role,
+      name: newUser.name,
     });
   } catch (error) {
     if (error.response?.status === 400) {
@@ -162,6 +164,7 @@ app.post("/auth/login", async (req, res) => {
     const token = generateToken({
       userId: user.userId,
       role: user.role,
+      name: user.name,
     });
 
     res.cookie("token", token, {
@@ -170,7 +173,12 @@ app.post("/auth/login", async (req, res) => {
       sameSite: "lax",
     });
 
-    res.json({ message: "Login successful" });
+    res.json({
+      message: "Login successful",
+      role: user.role,
+      name: user.name,
+      userId: user.userId,
+    });
   } catch (error) {
     if (error.response?.status === 404) {
       return res.status(400).json({ error: "Invalid credentials" });
@@ -184,6 +192,7 @@ app.get("/auth/me", authMiddleware, (req, res) => {
   res.json({
     userId: req.user.userId,
     role: req.user.role,
+    name: req.user.name,
   });
 });
 

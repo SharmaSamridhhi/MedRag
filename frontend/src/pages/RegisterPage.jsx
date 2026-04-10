@@ -65,7 +65,12 @@ export default function RegisterPage() {
       }
 
       // Auto-login after register
-      login({ email: data.email, role: selectedRole, id: json.userId });
+      login({
+        email: data.email,
+        role: selectedRole,
+        name: data.name,
+        id: json.userId,
+      });
       navigate("/dashboard");
     } catch {
       setServerError("Network error. Please check your connection.");

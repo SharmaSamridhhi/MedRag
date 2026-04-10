@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "../hooks/useChat";
 import { useAuth } from "@/context/AuthContext";
-import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/pages/DashboardLayout";
+import { useSearchParams } from "react-router-dom";
 import { Send, Square, X, FileText, ChevronRight } from "lucide-react";
 
 const EXAMPLE_QUESTIONS = {
@@ -28,7 +28,7 @@ const EXAMPLE_QUESTIONS = {
   ],
 };
 
-function highlightCitationText(text, sourceNumber) {
+function highlightCitationText(text) {
   const parts = text.split(/(\[Source \d+,\s*p\.\d+\])/g);
   return parts.map((part, i) =>
     /^\[Source/.test(part) ? (
@@ -180,8 +180,8 @@ export default function ChatWindow() {
     isStreaming,
     sendMessage,
     stopStreaming,
-    clearSession,
-    loadSession,
+    // clearSession,
+    // loadSession,
   } = useChat(searchParams.get("sessionId"));
   const { user } = useAuth();
   const [input, setInput] = useState("");
@@ -240,11 +240,11 @@ export default function ChatWindow() {
     setActiveCitationIndex(clickedIndex);
   };
 
-  const handleNewChat = async () => {
-    setActiveCitations([]);
-    setActiveCitationIndex(0);
-    await clearSession();
-  };
+  // const handleNewChat = async () => {
+  //   setActiveCitations([]);
+  //   setActiveCitationIndex(0);
+  //   await clearSession();
+  // };
 
   return (
     <DashboardLayout>
@@ -350,7 +350,7 @@ export default function ChatWindow() {
                             }
                       }
                     >
-                      {msg.loading ? (
+                      {msg.loading && !msg.content ? (
                         <span
                           className='flex items-center gap-1.5'
                           style={{ color: "#6b9080" }}

@@ -1,15 +1,47 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { SquarePen, History, BookOpen, Settings, LogOut } from "lucide-react";
+import {
+  SquarePen,
+  History,
+  BookOpen,
+  Settings,
+  LogOut,
+  Camera,
+} from "lucide-react";
+import { useState, useRef } from "react";
+
+function getInitials(name, email) {
+  if (name) {
+    const parts = name.trim().split(" ");
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0].slice(0, 2).toUpperCase();
+  }
+  return email ? email[0].toUpperCase() : "?";
+}
 
 export default function DashboardLayout({ children }) {
-  const { user, logout } = useAuth();
+  const { user, logout, login } = useAuth();
   const navigate = useNavigate();
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [hovering, setHovering] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleLogout = async () => {
     await logout();
     navigate("/login");
   };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setAvatarUrl(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const initials = getInitials(user?.name, user?.email);
+  const displayName = user?.name || user?.email || "Clinician";
 
   const navItems = [
     { to: "/dashboard", icon: SquarePen, label: "New Chat", end: true },
@@ -85,21 +117,68 @@ export default function DashboardLayout({ children }) {
         <div className='px-3 py-4 border-t' style={{ borderColor: "#cce3de" }}>
           {user && (
             <div
-              className='px-3 py-2 mb-2 rounded-lg'
+              className='flex items-center gap-3 px-3 py-2.5 mb-2 rounded-xl'
               style={{ backgroundColor: "#d6ece6" }}
             >
-              <p
-                className='text-xs font-semibold truncate'
-                style={{ color: "#1a2e25" }}
+              {/* Avatar */}
+              <div
+                className='relative shrink-0 cursor-pointer'
+                onMouseEnter={() => setHovering(true)}
+                onMouseLeave={() => setHovering(false)}
+                onClick={() => fileInputRef.current?.click()}
+                title='Change profile picture'
               >
-                {user.email || "Clinician"}
-              </p>
-              <p
-                className='text-[10px] tracking-widest mt-0.5 capitalize'
-                style={{ color: "#6b9080" }}
-              >
-                {user.role}
-              </p>
+                <div
+                  className='w-9 h-9 rounded-full flex items-center justify-center overflow-hidden text-xs font-bold select-none'
+                  style={{
+                    backgroundColor: avatarUrl ? "transparent" : "#6b9080",
+                    color: "white",
+                    border: "2px solid #a4c3b2",
+                  }}
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt='Profile'
+                      className='w-full h-full object-cover'
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                {/* Hover overlay */}
+                {hovering && (
+                  <div
+                    className='absolute inset-0 rounded-full flex items-center justify-center'
+                    style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+                  >
+                    <Camera className='w-3.5 h-3.5 text-white' />
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type='file'
+                  accept='image/*'
+                  className='hidden'
+                  onChange={handleAvatarChange}
+                />
+              </div>
+
+              {/* Name + role */}
+              <div className='min-w-0'>
+                <p
+                  className='text-xs font-semibold truncate'
+                  style={{ color: "#1a2e25" }}
+                >
+                  {displayName}
+                </p>
+                <p
+                  className='text-[10px] tracking-widest mt-0.5 capitalize'
+                  style={{ color: "#6b9080" }}
+                >
+                  {user.role}
+                </p>
+              </div>
             </div>
           )}
           <button
