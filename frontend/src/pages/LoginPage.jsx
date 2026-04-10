@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { Mail, Lock, LogIn, Shield, Brain } from "lucide-react";
+import MedRAGLogo from "@/components/MedRAGLogo";
 
 export default function LoginPage() {
   const { login, user, loading } = useAuth();
@@ -77,26 +78,8 @@ export default function LoginPage() {
         style={{ backgroundColor: "#f6fff8" }}
       >
         {/* Logo + Brand */}
-        <div className='flex flex-col items-center mb-8 gap-3'>
-          <div
-            className='w-14 h-14 rounded-2xl flex items-center justify-center'
-            style={{ backgroundColor: "#6b9080" }}
-          >
-            <svg width='28' height='28' viewBox='0 0 24 24' fill='white'>
-              <path d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z' />
-              <path d='M13 8h-2v5h2zm0 6h-2v2h2z' opacity='0' />
-              {/* Medical cross */}
-              <path d='M11 6h2v4h4v2h-4v4h-2v-4H7v-2h4z' />
-            </svg>
-          </div>
-          <div className='text-center'>
-            <h1 className='text-2xl font-bold' style={{ color: "#2d4a3e" }}>
-              MedRAG AI
-            </h1>
-            <p className='text-sm' style={{ color: "#6b9080" }}>
-              Clinical Intelligence Portal
-            </p>
-          </div>
+        <div className='flex flex-col items-center mb-4'>
+          <MedRAGLogo size='lg' />
         </div>
 
         {/* Card */}

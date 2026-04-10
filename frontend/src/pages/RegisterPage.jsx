@@ -17,6 +17,7 @@ import {
   HeartPulse,
   UserRound,
 } from "lucide-react";
+import MedRAGLogo from "@/components/MedRAGLogo";
 
 const ROLES = [
   { value: "doctor", label: "DOCTOR", Icon: Stethoscope },
@@ -87,31 +88,14 @@ export default function RegisterPage() {
       <div className='w-full max-w-5xl flex rounded-2xl overflow-hidden shadow-lg'>
         {/* ── Left panel ── */}
         <div
-          className='hidden md:flex flex-col justify-between w-5/12 p-10'
+          className='hidden md:flex flex-col gap-y-1.5 w-5/12 p-10'
           style={{ backgroundColor: "#d6ece6" }}
         >
           {/* Logo */}
-          <div className='flex items-center gap-2.5'>
-            <div
-              className='w-9 h-9 rounded-lg flex items-center justify-center'
-              style={{ backgroundColor: "#6b9080" }}
-            >
-              <svg width='18' height='18' viewBox='0 0 24 24' fill='white'>
-                <path d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z' />
-                <path d='M13 8h-2v5h2zm0 6h-2v2h2z' opacity='0' />
-                <path d='M11 6h2v4h4v2h-4v4h-2v-4H7v-2h4z' />
-              </svg>
-            </div>
-            <span
-              className='font-semibold text-lg'
-              style={{ color: "#2d4a3e" }}
-            >
-              MedRAG
-            </span>
-          </div>
+          <MedRAGLogo size='lg' left={34} />
 
           {/* Hero text */}
-          <div className='my-8'>
+          <div className='mb-8 '>
             <h2
               className='text-5xl font-black leading-tight'
               style={{ color: "#1a2e25" }}

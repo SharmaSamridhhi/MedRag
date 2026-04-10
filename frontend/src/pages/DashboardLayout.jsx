@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import MedRAGLogo from "@/components/MedRAGLogo";
 import { useAuth } from "@/context/AuthContext";
 import {
   SquarePen,
@@ -88,32 +89,8 @@ export default function DashboardLayout({ children }) {
         style={{ backgroundColor: "#eaf4f4", borderColor: "#cce3de" }}
       >
         {/* Logo */}
-        <div
-          className='flex items-center gap-2.5 px-5 py-5 border-b'
-          style={{ borderColor: "#cce3de" }}
-        >
-          <div
-            className='w-8 h-8 rounded-lg flex items-center justify-center shrink-0'
-            style={{ backgroundColor: "#6b9080" }}
-          >
-            <svg width='16' height='16' viewBox='0 0 24 24' fill='white'>
-              <path d='M11 6h2v4h4v2h-4v4h-2v-4H7v-2h4z' />
-            </svg>
-          </div>
-          <div>
-            <p
-              className='text-sm font-bold leading-none'
-              style={{ color: "#1a2e25" }}
-            >
-              MedRAG
-            </p>
-            <p
-              className='text-[10px] tracking-widest uppercase mt-0.5'
-              style={{ color: "#6b9080" }}
-            >
-              Clinical Intelligence
-            </p>
-          </div>
+        <div className='px-5 py-3 border-b' style={{ borderColor: "#cce3de" }}>
+          <MedRAGLogo size='md' />
         </div>
 
         {/* Nav */}
