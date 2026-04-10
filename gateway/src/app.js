@@ -178,6 +178,7 @@ app.post("/auth/login", async (req, res) => {
       role: user.role,
       name: user.name,
       userId: user.userId,
+      avatarUrl: user.avatarUrl || null,
     });
   } catch (error) {
     if (error.response?.status === 404) {
@@ -188,12 +189,46 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
-app.get("/auth/me", authMiddleware, (req, res) => {
-  res.json({
-    userId: req.user.userId,
-    role: req.user.role,
-    name: req.user.name,
-  });
+app.get("/auth/me", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const response = await axios.get(`${AI_SERVICE_URL}/users/${userId}`);
+    const user = response.data;
+    res.json({
+      userId: user.userId,
+      role: user.role,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl || null,
+    });
+  } catch (error) {
+    res.json({
+      userId: req.user.userId,
+      role: req.user.role,
+      name: req.user.name,
+    });
+  }
+});
+
+app.patch("/auth/avatar", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { avatarUrl } = req.body;
+
+    if (!avatarUrl || typeof avatarUrl !== "string") {
+      return res.status(400).json({ error: "avatarUrl is required" });
+    }
+
+    const response = await axios.patch(
+      `${AI_SERVICE_URL}/users/${userId}/avatar`,
+      { avatarUrl },
+    );
+
+    return res.json(response.data);
+  } catch (error) {
+    console.error("[Gateway] Avatar update error:", error.message);
+    return res.status(500).json({ error: "Failed to update avatar" });
+  }
 });
 
 app.post("/auth/logout", (req, res) => {

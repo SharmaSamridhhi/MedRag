@@ -64,12 +64,12 @@ export default function RegisterPage() {
         return;
       }
 
-      // Auto-login after register
       login({
         email: data.email,
         role: selectedRole,
         name: data.name,
         id: json.userId,
+        avatarUrl: json.avatarUrl || null,
       });
       navigate("/dashboard");
     } catch {

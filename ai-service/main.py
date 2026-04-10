@@ -32,6 +32,9 @@ class UserCreate(BaseModel):
     name: str
     role: str
 
+class AvatarUpdate(BaseModel):
+    avatarUrl: str
+
 def get_db():
     db = SessionLocal()
     try:
@@ -124,6 +127,33 @@ def get_user_by_email(email: str, db: Session = Depends(get_db)):
         "name": user.name,
         "role": user.role,
         "password": user.password,
+        "avatarUrl": user.avatar_url,
+    }
+
+@app.get("/users/{user_id}")
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "userId": user.id,
+        "email": user.email,
+        "name": user.name,
+        "role": user.role,
+        "avatarUrl": user.avatar_url,
+    }
+
+@app.patch("/users/{user_id}/avatar")
+def update_avatar(user_id: int, body: AvatarUpdate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.avatar_url = body.avatarUrl
+    db.commit()
+    db.refresh(user)
+    return {
+        "userId": user.id,
+        "avatarUrl": user.avatar_url,
     }
 
 @app.post("/retrieve")

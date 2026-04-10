@@ -7,8 +7,11 @@ import {
   Settings,
   LogOut,
   Camera,
+  Loader2,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 function getInitials(name, email) {
   if (name) {
@@ -23,9 +26,14 @@ function getInitials(name, email) {
 export default function DashboardLayout({ children }) {
   const { user, logout, login } = useAuth();
   const navigate = useNavigate();
-  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [hovering, setHovering] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (user?.avatarUrl) setAvatarUrl(user.avatarUrl);
+  }, [user?.avatarUrl]);
 
   const handleLogout = async () => {
     await logout();
@@ -36,7 +44,26 @@ export default function DashboardLayout({ children }) {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setAvatarUrl(ev.target.result);
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target.result;
+      setAvatarUrl(dataUrl);
+      setUploadingAvatar(true);
+      try {
+        const res = await fetch(`${API_URL}/auth/avatar`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ avatarUrl: dataUrl }),
+        });
+        if (res.ok) {
+          login({ ...user, avatarUrl: dataUrl });
+        }
+      } catch (err) {
+        console.error("Avatar upload error:", err);
+      } finally {
+        setUploadingAvatar(false);
+      }
+    };
     reader.readAsDataURL(file);
   };
 
@@ -125,7 +152,9 @@ export default function DashboardLayout({ children }) {
                 className='relative shrink-0 cursor-pointer'
                 onMouseEnter={() => setHovering(true)}
                 onMouseLeave={() => setHovering(false)}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() =>
+                  !uploadingAvatar && fileInputRef.current?.click()
+                }
                 title='Change profile picture'
               >
                 <div
@@ -147,12 +176,16 @@ export default function DashboardLayout({ children }) {
                   )}
                 </div>
                 {/* Hover overlay */}
-                {hovering && (
+                {(hovering || uploadingAvatar) && (
                   <div
                     className='absolute inset-0 rounded-full flex items-center justify-center'
                     style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
                   >
-                    <Camera className='w-3.5 h-3.5 text-white' />
+                    {uploadingAvatar ? (
+                      <Loader2 className='w-3.5 h-3.5 text-white animate-spin' />
+                    ) : (
+                      <Camera className='w-3.5 h-3.5 text-white' />
+                    )}
                   </div>
                 )}
                 <input

@@ -47,6 +47,7 @@ export default function LoginPage() {
         role: json.role,
         name: json.name,
         id: json.userId,
+        avatarUrl: json.avatarUrl || null,
       });
       navigate("/dashboard");
     } catch {

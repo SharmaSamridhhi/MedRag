@@ -13,6 +13,7 @@ class User(Base):
     name = Column(String)
     password = Column(String, nullable=False)
     role = Column(String, nullable=False)
+    avatar_url = Column(Text, nullable=True)
 
 
 class Document(Base):
