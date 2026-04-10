@@ -5,7 +5,6 @@ import {
   SquarePen,
   History,
   BookOpen,
-  Settings,
   LogOut,
   Camera,
   Loader2,
@@ -75,7 +74,6 @@ export default function DashboardLayout({ children }) {
     { to: "/dashboard", icon: SquarePen, label: "New Chat", end: true },
     { to: "/history", icon: History, label: "History" },
     { to: "/library", icon: BookOpen, label: "Library" },
-    { to: "/settings", icon: Settings, label: "Settings" },
   ];
 
   return (
@@ -90,7 +88,15 @@ export default function DashboardLayout({ children }) {
       >
         {/* Logo */}
         <div className='px-5 py-3 border-b' style={{ borderColor: "#cce3de" }}>
-          <MedRAGLogo size='md' />
+          <div
+            style={{
+              transform: "scale(0.62)",
+              transformOrigin: "left center",
+              height: 38,
+            }}
+          >
+            <MedRAGLogo size='lg' left={33} top={36} />
+          </div>
         </div>
 
         {/* Nav */}

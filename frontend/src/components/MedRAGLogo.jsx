@@ -1,8 +1,14 @@
-export default function MedRAGLogo({ size = "md", className = "", left = 50 }) {
+export default function MedRAGLogo({
+  size = "md",
+  className = "",
+  left = 50,
+  top = 50,
+}) {
   const sizes = {
     sm: { width: 90, scale: 4.2 },
     md: { width: 120, scale: 4.2 },
     lg: { width: 240, scale: 4.2, Padding: 0 },
+    xl: { width: 320, scale: 4.2, Padding: 0 },
   };
 
   const s = sizes[size] || sizes.md;
@@ -27,7 +33,7 @@ export default function MedRAGLogo({ size = "md", className = "", left = 50 }) {
           width: imgWidth,
           height: "auto",
           position: "absolute",
-          top: "50%",
+          top: `${top}%`,
           left: `${left}%`,
           transform: "translate(-50%, -50%)",
         }}
