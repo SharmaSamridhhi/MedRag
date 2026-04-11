@@ -124,7 +124,7 @@ app.post("/auth/register", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
     });
 
@@ -169,7 +169,7 @@ app.post("/auth/login", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
     });
 
@@ -234,7 +234,7 @@ app.patch("/auth/avatar", authMiddleware, async (req, res) => {
 app.post("/auth/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     sameSite: "lax",
   });
   res.json({ message: "Logged out successfully" });
