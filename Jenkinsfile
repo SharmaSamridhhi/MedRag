@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DEPLOY_HOST = 'ubuntu@localhost'
+        DEPLOY_HOST = 'ubuntu@172.31.32.1'
         PROJECT_DIR = '/home/ubuntu/MedRag'
     }
 
