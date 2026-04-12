@@ -199,7 +199,7 @@ export default function ChatWindow() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/documents`, {
+    fetch(`${"/api"}/documents`, {
       credentials: "include",
     })
       .then((r) => (r.ok ? r.json() : []))

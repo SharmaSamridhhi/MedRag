@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
 import { MessageSquare, Clock, ChevronRight, Inbox } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 function formatRelativeTime(isoString) {
   const date = new Date(isoString);
@@ -27,7 +26,7 @@ export default function HistoryPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${API_URL}/chat/sessions`, { credentials: "include" })
+    fetch(`/api/chat/sessions`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : { sessions: [] }))
       .then((data) => setSessions(data.sessions || []))
       .catch(() => setSessions([]))
