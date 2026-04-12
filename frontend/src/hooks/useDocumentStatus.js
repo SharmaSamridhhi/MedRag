@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 export function useDocumentStatus(documentId) {
   const [status, setStatus] = useState("pending");
@@ -12,7 +11,7 @@ export function useDocumentStatus(documentId) {
 
     const poll = async () => {
       try {
-        const res = await fetch(`${API_URL}/documents/${documentId}/status`, {
+        const res = await fetch(`/api/documents/${documentId}/status`, {
           credentials: "include",
         });
         const data = await res.json();

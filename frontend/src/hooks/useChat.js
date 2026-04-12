@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 export function useChat(initialSessionId = null) {
   const [messages, setMessages] = useState([]);
@@ -13,7 +12,7 @@ export function useChat(initialSessionId = null) {
   useEffect(() => {
     if (!initialSessionId) return;
     sessionIdRef.current = initialSessionId;
-    fetch(`${API_URL}/chat/history?sessionId=${initialSessionId}`, {
+    fetch(`/api/chat/history?sessionId=${initialSessionId}`, {
       credentials: "include",
     })
       .then((r) => (r.ok ? r.json() : { messages: [] }))
@@ -49,7 +48,7 @@ export function useChat(initialSessionId = null) {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      const response = await fetch(`${API_URL}/chat/stream`, {
+      const response = await fetch(`/api/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -134,7 +133,7 @@ export function useChat(initialSessionId = null) {
   const clearSession = async () => {
     const oldSessionId = sessionIdRef.current;
     try {
-      await fetch(`${API_URL}/chat/clear`, {
+      await fetch(`/api/chat/clear`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

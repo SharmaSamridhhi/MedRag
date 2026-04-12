@@ -11,7 +11,6 @@ import {
   Clock,
 } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 function StatusBadge({ status }) {
   const map = {
@@ -73,7 +72,7 @@ export default function LibraryPage() {
   const fetchDocuments = useCallback(async (silent = false) => {
     if (!silent) setIsRefreshing(true);
     try {
-      const res = await fetch(`${API_URL}/documents`, {
+      const res = await fetch(`/api/documents`, {
         credentials: "include",
       });
       const data = await res.json();
@@ -113,7 +112,7 @@ export default function LibraryPage() {
 
     try {
       setUploadProgress(40);
-      const res = await fetch(`${API_URL}/documents/upload`, {
+      const res = await fetch(`/api/documents/upload`, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -151,7 +150,7 @@ export default function LibraryPage() {
 
   const handleDelete = async (docId) => {
     try {
-      await fetch(`${API_URL}/documents/${docId}`, {
+      await fetch(`/api/documents/${docId}`, {
         method: "DELETE",
         credentials: "include",
       });

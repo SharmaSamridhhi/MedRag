@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 function getInitials(name, email) {
   if (name) {
@@ -49,7 +48,7 @@ export default function DashboardLayout({ children }) {
       setAvatarUrl(dataUrl);
       setUploadingAvatar(true);
       try {
-        const res = await fetch(`${API_URL}/auth/avatar`, {
+        const res = await fetch(`/api/auth/avatar`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
