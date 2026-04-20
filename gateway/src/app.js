@@ -115,7 +115,6 @@ app.post("/auth/register", async (req, res) => {
 
     const newUser = userResponse.data;
 
-    // Issue a token so the frontend can auto-login after registration
     const token = generateToken({
       userId: newUser.userId,
       role: newUser.role,
